@@ -7,13 +7,24 @@
 
 #define LEDPIN 10
 #define BUTTON_PIN 9
+#define PI 3.1415926535897932384626433832795
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(6, LEDPIN, NEO_GRB);
 
 int mode = 1;
 unsigned long CurrentTime = millis();
 unsigned long stepTime = 100;
 unsigned long stepTimer = 0;
-uint16_t i, j;
+unsigned long stepTimer2 = 0;
+unsigned long stepTimer3 = 0;
+uint16_t i, j, k, m, n;
+uint16_t wheelTime, wheelTime2;
+uint16_t wheelAmp, wheelAmp2;
+uint16_t modeCount;
+uint32_t red, gre, blu, red2, gre2, blu2;
+uint32_t red3, gre3, blu3, red4, gre4, blu4;
+uint32_t color, color2;
+float var, var2, var3, var4;
+double percent, percent2;
 
 ezButton button(BUTTON_PIN);
 unsigned long pressedTime = 0;
@@ -60,6 +71,9 @@ void loop() {
       mode = 0;
       stepTimer = 0;
       j = 0;
+      k = 0;
+      m = 0;
+      n = 0;
       Serial.print("updated to ");
       Serial.println(mode);
       }
@@ -71,6 +85,9 @@ void loop() {
       mode += 1;
       stepTimer = 0;
       j = 0;
+      k = 0;
+      m = 0;
+      n = 0;
       Serial.print("updated to ");
       Serial.println(mode);
       } 
@@ -80,8 +97,11 @@ void loop() {
   switch (mode) {
     case 0:
      // Off, all leds are off
+
+     modeCount = 0;
+     
       CurrentTime = millis();
-      if ((stepTimer - CurrentTime) > 100)
+      if ((CurrentTime - stepTimer) > 100)
       {
         stepTimer = millis();
         for (i = 0; i < strip.numPixels(); i++) {
@@ -92,6 +112,13 @@ void loop() {
       break;
     case 1:
       // colour cycle
+      
+      if (modeCount == 0)
+      {
+        j = random(0, 256);
+        modeCount++;
+      }
+      
       CurrentTime = millis();
       if ((CurrentTime - stepTimer) > 5000)
       {
@@ -112,51 +139,229 @@ void loop() {
       }
       break;
     case 2:
-      // red and yellow
+      // color cycle offset
+
+      if (modeCount == 1)
+      {
+        j = random(0, 256);
+        k = random(0, 256);
+        modeCount++;
+      }
+      
       CurrentTime = millis();
-      if ((stepTimer - CurrentTime) > 100)
+      if ((CurrentTime - stepTimer) > 5000)
       {
         stepTimer = millis();
         for (i = 0; i < strip.numPixels()/2; i++) {
-          strip.setPixelColor(i, strip.Color(255, 0, 0));
-        }
-        for (i = 3; i < strip.numPixels(); i++) {
-          strip.setPixelColor(i, strip.Color(255, 255, 0));
+          strip.setPixelColor(i, Wheel(( j) & 255));
         }
         strip.show();
+        if (j < 256) {
+          j++;
+        }
+        else {
+          j = 0;
+        }
+      }
+
+      if ((CurrentTime - stepTimer2) > 4000)
+      {
+        stepTimer2 = millis();
+        for (i = 3; i < strip.numPixels(); i++) {
+          strip.setPixelColor(i, Wheel(( k) & 255));
+        }
+        strip.show();
+        if (k < 256) {
+          k++;
+        }
+        else {
+          k = 0;
+        }
       }
       break;
     case 3:
-      // yellow and green
+      // Pulsing yellow and green
+
+      if (modeCount == 2)
+      {
+        wheelTime = random(10, 120); // defines the time for one pulse
+        wheelAmp = random(50, 100); // defines the amplitude of the pulse, should always be even!
+          if ( (wheelAmp % 2) != 0) {
+          wheelAmp++;  
+          }
+        wheelTime2 = random(10, 120); // defines the time for one pulse
+        wheelAmp2 = random(50, 100); // defines the amplitude of the pulse, should always be even!
+          if ( (wheelAmp2 % 2) != 0) {
+          wheelAmp2++;  
+          }
+        modeCount++;
+      }
+           
       CurrentTime = millis();
-      if ((stepTimer - CurrentTime) > 100)
+      if ((CurrentTime - stepTimer) > 100)
       {
         stepTimer = millis();
+        
+        if (var < wheelTime) { // defines the first loop
+          var++;
+        }
+        else {
+          var = 0;
+          wheelTime = random(10, 120);
+          wheelAmp = random(50, 100);
+            if ( (wheelAmp % 2) != 0) {
+            wheelAmp++;  
+            }
+        }
+        var2 = var / (wheelTime/2);
+        double cosine;
+        cosine = cos(var2*PI);
+        cosine++; // by adding '1' the cosine will cycle between 2 and 0 (instead of 1 and -1)
+        m = ((cosine*wheelAmp)+55+((100-wheelAmp)*2)); // m will shift between 255 and minimally 55 and back up again following the cosine
+
+        if (var3 < wheelTime2) { // defines the second loop
+          var3++;
+        }
+        else {
+          var3 = 0;
+          wheelTime2 = random(10, 120);
+          wheelAmp2 = random(50, 100);
+            if ( (wheelAmp2 % 2) != 0) {
+            wheelAmp2++;  
+            }
+        }
+        var4 = var3 / (wheelTime2/2);
+        double cosine2;
+        cosine2 = cos(var4*PI);
+        cosine2++; // by adding '1' the cosine will cycle between 2 and 0 (instead of 1 and -1)
+        n = ((cosine2*wheelAmp2)+55+((100-wheelAmp2)*2)); // n will shift between 255 and minimally 55 and back up again following the cosine
+        
         for (i = 0; i < strip.numPixels()/2; i++) {
-          strip.setPixelColor(i, strip.Color(0, 255, 0));
+          color = strip.Color(0, m, 0);
+          strip.setPixelColor(i, color);
         }
         for (i = 3; i < strip.numPixels(); i++) {
-          strip.setPixelColor(i, strip.Color(255, 255, 0));
+          color2 = strip.Color(n, n, 0);
+          strip.setPixelColor(i, color2);
         }
         strip.show();
       }
       break;
     case 4:
-      // green and purple
+      // Pulsing color cycle offset
+      
+      if (modeCount == 3) // runs set-up code for this mode
+      {
+        j = random(0, 256); // randomizes starting position color cycle
+        k = random(0, 256); // randomizes starting position color cycle 2
+        wheelTime = random(10, 120); // defines the initial time for one pulse
+        wheelAmp = random(50, 100); // defines the initial amplitude of the pulse, should always be even!
+          if ( (wheelAmp % 2) != 0) {
+          wheelAmp++;  
+          }
+        wheelTime2 = random(10, 120); // defines the initial time for one pulse
+        wheelAmp2 = random(50, 100); // defines the initial amplitude of the pulse, should always be even!
+          if ( (wheelAmp2 % 2) != 0) {
+          wheelAmp2++;  
+          }
+        modeCount++;
+      }
+
       CurrentTime = millis();
-      if ((stepTimer - CurrentTime) > 100)
+      if ((CurrentTime - stepTimer) > 5000)
       {
         stepTimer = millis();
+
+        color = Wheel(( j) & 255);
+        red = color/65536; // The following functions work as a decimal to RGB decoder
+        gre = (color-(red*65536))/256;
+        blu = color-(red*65536)-(gre*256);
+       
+        if (j < 256) {
+          j++;
+        }
+        else {
+          j = 0;
+        }
+      }
+
+      if ((CurrentTime - stepTimer2) > 4000)
+      {
+        stepTimer2 = millis();
+
+        color2 = Wheel(( k) & 255);
+        red3 = color2/65536; // The following functions work as a decimal to RGB decoder
+        gre3 = (color2-(red3*65536))/256;
+        blu3 = color2-(red3*65536)-(gre3*256);
+        
+        if (k < 256) {
+          k++;
+        }
+        else {
+          k = 0;
+        }
+      }
+     
+      if ((CurrentTime - stepTimer3) > 100)
+      {
+        stepTimer3 = millis();
+        
+        if (var < wheelTime) {
+          var++;
+        }
+        else {
+          var = 0;
+          wheelTime = random(10, 120);
+          wheelAmp = random(50, 100);
+            if ( (wheelAmp % 2) != 0) {
+            wheelAmp++;  
+            }
+        }
+        var2 = var / (wheelTime/2);
+        double cosine;
+        cosine = cos(var2*PI);
+        cosine++; // by adding '1' the cosine will cycle between 2 and 0 (instead of 1 and -1)
+        m = ((cosine*wheelAmp)+55+((100-wheelAmp)*2)); // m will shift between 255 and minimally 55 and back up again following the cosine
+
+        percent = m / 255.00;
+        red2 = red*percent;
+        gre2 = gre*percent;
+        blu2 = blu*percent;
+
         for (i = 0; i < strip.numPixels()/2; i++) {
-          strip.setPixelColor(i, strip.Color(0, 255, 0));
+          strip.setPixelColor(i, red2, gre2, blu2);
         }
+
+        if (var3 < wheelTime2) { // defines the second loop
+          var3++;
+        }
+        else {
+          var3 = 0;
+          wheelTime2 = random(10, 120);
+          wheelAmp2 = random(50, 100);
+            if ( (wheelAmp2 % 2) != 0) {
+            wheelAmp2++;  
+            }
+        }
+        var4 = var3 / (wheelTime2/2);
+        double cosine2;
+        cosine2 = cos(var4*PI);
+        cosine2++; // by adding '1' the cosine will cycle between 2 and 0 (instead of 1 and -1)
+        n = ((cosine2*wheelAmp2)+55+((100-wheelAmp2)*2)); // n will shift between 255 and minimally 55 and back up again following the cosine
+
+        percent2 = n / 255.00;
+        red4 = red3*percent2;
+        gre4 = gre3*percent2;
+        blu4 = blu3*percent2;
+        
         for (i = 3; i < strip.numPixels(); i++) {
-          strip.setPixelColor(i, strip.Color(255, 0, 255));
+          strip.setPixelColor(i, red4, gre4, blu4);
         }
+        
         strip.show();
       }
       break;
-    case 5:
+/*    case 5:
       // cyan
       CurrentTime = millis();
       if ((stepTimer - CurrentTime) > 100)
@@ -252,8 +457,8 @@ void loop() {
         }
         strip.show();
       }
-      break;
-    case 12:
+      break; */
+    case 5:
       // reset mode to 0
       mode = 0;
       Serial.println("reset mode");
